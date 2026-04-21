@@ -5,14 +5,16 @@ export default function PrivacyPolicy() {
     <div style={styles.pageBackground}>
       <div style={styles.container}>
         <header style={styles.header}>
-          <h1 style={styles.title}>Datenschutzerklärung</h1>
+          {/* ЗМІНА: Додано англійський термін для ботів Google Play */}
+          <h1 style={styles.title}>Datenschutzerklärung / Privacy Policy</h1>
           <p style={styles.date}>Zuletzt aktualisiert: April 2026</p>
         </header>
 
         <section style={styles.section}>
           <h2 style={styles.heading}>1. Einleitung</h2>
           <p style={styles.text}>
-            Willkommen bei <strong>Goldstadtaktuell</strong>. Der Schutz Ihrer persönlichen Daten ist uns ein sehr wichtiges Anliegen. Diese Datenschutzerklärung erklärt transparent, welche Informationen wir erfassen, wie wir sie verwenden und wie wir sie schützen, wenn Sie unsere mobile Anwendung (die "App") nutzen.
+            {/* ЗМІНА: Прямо вказано, що це офіційна політика */}
+            Willkommen bei <strong>Goldstadtaktuell</strong>. Diese Seite stellt unsere offizielle <strong>Datenschutzerklärung (Privacy Policy)</strong> dar. Der Schutz Ihrer persönlichen Daten ist uns ein sehr wichtiges Anliegen. Diese Datenschutzerklärung erklärt transparent, welche Informationen wir erfassen, wie wir sie verwenden und wie wir sie schützen, wenn Sie unsere mobile Anwendung (die "App") nutzen.
           </p>
         </section>
 
@@ -44,14 +46,22 @@ export default function PrivacyPolicy() {
         </section>
 
         <section style={styles.section}>
-          <h2 style={styles.heading}>4. Drittanbieter-Dienste</h2>
+          <h2 style={styles.heading}>4. Datenlöschung (Data Deletion)</h2>
+          <p style={styles.text}>
+            {/* ЗМІНА: Додано розділ про видалення даних (вимога Google зі скріншота) */}
+            Wenn Sie ein Konto bei uns erstellt haben und dieses oder Ihre Daten löschen möchten, kontaktieren Sie uns bitte über unsere <a href="#/support" style={styles.link}>Support-Seite</a> oder schreiben Sie uns direkt eine E-Mail. Wir werden Ihre Daten dann umgehend und vollständig aus unseren Systemen entfernen.
+          </p>
+        </section>
+
+        <section style={styles.section}>
+          <h2 style={styles.heading}>5. Drittanbieter-Dienste</h2>
           <p style={styles.text}>
             Die App kann Dienste von Drittanbietern nutzen (z. B. Google Play-Dienste), die möglicherweise eigene Daten erfassen, um beispielsweise Absturzberichte zu generieren. Diese Daten sind anonymisiert und helfen uns, die Stabilität der App zu verbessern.
           </p>
         </section>
 
         <section style={styles.section}>
-          <h2 style={styles.heading}>5. Kontakt</h2>
+          <h2 style={styles.heading}>6. Kontakt</h2>
           <p style={styles.text}>
             Wenn Sie Fragen, Anmerkungen oder Bedenken bezüglich dieser Datenschutzerklärung haben, stehen wir Ihnen gerne zur Verfügung. Bitte besuchen Sie dazu unsere <a href="#/support" style={styles.link}>Support-Seite</a>.
           </p>
@@ -99,7 +109,7 @@ const styles = {
     marginBottom: '30px',
   },
   heading: {
-    color: '#1a73e8', // Приємний синій колір для заголовків
+    color: '#1a73e8', 
     fontSize: '22px',
     marginBottom: '15px',
     fontWeight: '600',
