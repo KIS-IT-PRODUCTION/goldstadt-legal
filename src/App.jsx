@@ -14,8 +14,8 @@ function PublicLayout() {
           </div>
           <div style={styles.navLinks}>
             <Link to="/" style={styles.link}>Startseite</Link>
-            <Link to="/privacy" style={styles.link}>Datenschutz</Link>
-            <Link to="/support" style={styles.link}>Support</Link>
+            <Link to="/privacy-policy" style={styles.link}>Datenschutz</Link>
+            <Link to="/support-all" style={styles.link}>Support</Link>
           </div>
         </div>
       </nav>
@@ -54,7 +54,7 @@ export default function App() {
             </div>
           } />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/support" element={<Support />} />
+          <Route path="/support-all" element={<Support />} />
         </Route>
 
         {/* Адмінка винесена ОКРЕМО, без загального меню і футера */}

@@ -17,31 +17,32 @@ export default function Support() {
           <div style={styles.contactBox}>
             <span style={styles.icon}>✉️</span>
             <strong>E-Mail Support: </strong> 
-            {/* ВАЖЛИВО: Замініть goldstadtaktuell.app@gmail.com
- на вашу реальну пошту */}
-            <a href="mailto:goldstadtaktuell.app@gmail.com
-" style={styles.link}>goldstadtaktuell.app@gmail.com
-</a>
+            <a href="mailto:goldstadtaktuell.app@gmail.com" style={styles.link}>
+              goldstadtaktuell.app@gmail.com
+            </a>
           </div>
         </section>
 
         <section style={styles.section}>
           <h2 style={styles.heading}>Löschung Ihrer Daten anfordern</h2>
           <p style={styles.text}>
-            Gemäß der DSGVO und den Richtlinien von Google Play haben Sie das Recht, die Löschung Ihrer persönlichen Daten zu verlangen. Obwohl unsere App grundsätzlich keine zwingenden Nutzerkonten erfordert, können Sie uns jederzeit kontaktieren, um sicherzustellen, dass alle eventuell mit Ihnen verknüpften Daten (z. B. frühere Support-Anfragen) vollständig gelöscht werden.
-          </p>
-          <p style={styles.text}>
-            Klicken Sie auf den untenstehenden Button, um eine automatische Anfrage zur Datenlöschung an unser Team zu senden:
+            Gemäß der DSGVO und den Richtlinien von Google Play haben Sie das Recht, die Löschung Ihrer persönlichen Daten und Ihres Kontos zu verlangen. 
           </p>
           
-          {/* ВАЖЛИВО: Замініть goldstadtaktuell.app@gmail.com
- на вашу реальну пошту */}
+          {/* Новий інформаційний блок, який чітко каже, що все ТІЛЬКИ через пошту */}
+          <div style={styles.infoBox}>
+            <strong>Wichtiger Hinweis:</strong> Aus Sicherheitsgründen und zur Überprüfung Ihrer Identität werden Anfragen zur Datenlöschung <strong>ausschließlich per E-Mail</strong> bearbeitet.
+          </div>
+
+          <p style={styles.text}>
+            Bitte senden Sie uns eine E-Mail mit der Bitte um Löschung. Klicken Sie auf den untenstehenden Button, um eine vorgefertigte E-Mail an unser Team zu öffnen:
+          </p>
+          
           <a 
-            href="mailto:goldstadtaktuell.app@gmail.com
-?subject=Anforderung zur Datenlöschung (Goldstadtaktuell)&body=Sehr geehrtes Support-Team,%0D%0A%0D%0Ahiermit fordere ich die vollständige Löschung all meiner gespeicherten Daten im Zusammenhang mit der Goldstadtaktuell App an.%0D%0A%0D%0A[Bitte fügen Sie hier ggf. weitere Informationen hinzu, damit wir Ihre Anfrage zuordnen können, z.B. Ihre E-Mail]%0D%0A%0D%0AMit freundlichen Grüßen" 
+            href="mailto:goldstadtaktuell.app@gmail.com?subject=Anforderung zur Datenlöschung (Goldstadtaktuell)&body=Sehr geehrtes Support-Team,%0D%0A%0D%0Ahiermit fordere ich die vollständige Löschung all meiner gespeicherten Daten und meines Kontos im Zusammenhang mit der Goldstadtaktuell App an.%0D%0A%0D%0ABitte bestätigen Sie mir die Löschung im Anschluss.%0D%0A%0D%0AMit freundlichen Grüßen" 
             style={styles.button}
           >
-            🗑️ Datenlöschung anfordern
+            🗑️ Datenlöschung per E-Mail anfordern
           </a>
         </section>
       </div>
@@ -49,7 +50,7 @@ export default function Support() {
   );
 }
 
-// Стилі, що відповідають дизайну Політики конфіденційності
+// Оновлені стилі
 const styles = {
   pageBackground: {
     backgroundColor: '#f8f9fa',
@@ -102,10 +103,21 @@ const styles = {
     backgroundColor: '#f1f8ff',
     borderLeft: '4px solid #1a73e8',
     padding: '15px 20px',
-    borderRadius: '4px',
+    borderRadius: '6px',
     marginTop: '20px',
     fontSize: '16px',
     color: '#212529',
+  },
+  infoBox: {
+    backgroundColor: '#fff3cd', // Ніжно-жовтий фон
+    borderLeft: '4px solid #ffc107', // Жовта лінія зліва
+    padding: '15px 20px',
+    borderRadius: '6px',
+    marginTop: '15px',
+    marginBottom: '20px',
+    fontSize: '15px',
+    color: '#856404',
+    lineHeight: '1.5',
   },
   icon: {
     marginRight: '10px',
@@ -117,7 +129,7 @@ const styles = {
   },
   button: {
     display: 'inline-block',
-    backgroundColor: '#dc3545', // Червоний колір для кнопки видалення
+    backgroundColor: '#dc3545',
     color: '#ffffff',
     padding: '12px 24px',
     borderRadius: '6px',
