@@ -3,14 +3,13 @@ import AdminStyles from './AdminStyles';
 import Login from './Login';
 import Dashboard from './Dashboard';
 import AddNews from './AddNews';
-import Notifications from './Notifications'; // Імпортуємо новий компонент
+import Notifications from './Notifications';
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // ⚠️ УВАГА: Замініть на ваш реальний домен бекенду після деплою
-  const API_BASE_URL = 'http://localhost:3000/api'; 
+  const API_BASE_URL = 'https://goldstadtaktuell-backend-production.up.railway.app/api'; 
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -52,7 +51,7 @@ export default function Admin() {
       {/* Бокова панель (Sidebar) */}
       <aside className="glass-panel sidebar">
         <div className="sidebar-brand">
-            <img style={{ width: '40px', height: '40px' }} src="public/favicon.png" alt="" />
+            <img style={{ width: '40px', height: '40px' }} src="/favicon.png" alt="" />
           <span>Goldstadt Admin</span>
         </div>
         <nav className="sidebar-nav">
@@ -97,7 +96,7 @@ export default function Admin() {
 
         {/* Динамічний контент (Рендеримо відповідний компонент) */}
         <main className="content">
-          {activeTab === 'dashboard' && <Dashboard />}
+          {activeTab === 'dashboard' && <Dashboard API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
           {activeTab === 'add-news' && <AddNews API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
           {activeTab === 'notifications' && <Notifications API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
         </main>

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
- const API_BASE_URL = 'http://localhost:3000/api';
-
-export default function Dashboard({ onLogout }) {
+export default function Dashboard({API_BASE_URL, onLogout }) {
   const [stats, setStats] = useState({ news: 0, users: 0, premium: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
