@@ -51,7 +51,7 @@ export default function Admin() {
       {/* Бокова панель (Sidebar) */}
       <aside className="glass-panel sidebar">
         <div className="sidebar-brand">
-            <img style={{ width: '40px', height: '40px' }} src="/favicon.png" alt="" />
+            <img style={{ width: '40px', height: '40px' }} src="/goldstadt-legal/favicon.png" alt="" />
           <span>Goldstadt Admin</span>
         </div>
         <nav className="sidebar-nav">
