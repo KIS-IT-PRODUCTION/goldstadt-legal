@@ -4,12 +4,27 @@ import Login from './Login';
 import Dashboard from './Dashboard';
 import AddNews from './AddNews';
 import Notifications from './Notifications';
+import NewsList from './NewsList';
+
+const NAV_ITEMS = [
+  { id: 'dashboard',     icon: '📊', label: 'Дашборд' },
+  { id: 'news-list',     icon: '📰', label: 'Всі новини' },
+  { id: 'add-news',      icon: '✍️',  label: 'Додати новину' },
+  { id: 'notifications', icon: '🔔', label: 'Сповіщення' },
+];
+
+const HEADER_TITLES = {
+  dashboard:     { title: 'Дашборд',             sub: 'Загальна статистика' },
+  'news-list':   { title: 'Управління новинами',  sub: 'Редагуйте та видаляйте матеріали' },
+  'add-news':    { title: 'Нова публікація',      sub: 'Заповніть форму та опублікуйте матеріал' },
+  notifications: { title: 'Push-сповіщення',     sub: 'Відправте повідомлення всім користувачам' },
+};
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const API_BASE_URL = 'https://goldstadtaktuell-backend-production.up.railway.app/api'; 
+  const API_BASE_URL = 'http://localhost:3000/api';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -23,7 +38,6 @@ export default function Admin() {
     setIsLoggedIn(false);
   };
 
-  // --- ЕКРАН АВТОРИЗАЦІЇ ---
   if (!isLoggedIn) {
     return (
       <div className="admin-wrapper glass-bg">
@@ -33,71 +47,66 @@ export default function Admin() {
     );
   }
 
-  // --- ДИНАМІЧНИЙ ЗАГОЛОВОК ---
-  const getHeaderTitle = () => {
-    switch(activeTab) {
-      case 'dashboard': return 'Статистика (Огляд)';
-      case 'add-news': return 'Публікація нового матеріалу';
-      case 'notifications': return 'Управління Push-сповіщеннями';
-      default: return 'Панель управління';
-    }
-  };
+  const header = HEADER_TITLES[activeTab] || { title: 'Панель управління', sub: '' };
 
-  // --- ЕКРАН АДМІНКИ ---
   return (
     <div className="admin-wrapper glass-bg layout-dashboard">
       <AdminStyles />
-      
-      {/* Бокова панель (Sidebar) */}
+
+      {/* ---- SIDEBAR ---- */}
       <aside className="glass-panel sidebar">
         <div className="sidebar-brand">
-            <img style={{ width: '40px', height: '40px' }} src="/goldstadt-legal/favicon.png" alt="" />
-          <span>Goldstadt Admin</span>
+          <div className="brand-icon">
+            <img src="/goldstadt-legal/favicon.png" alt="" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.textContent = 'G'; }} />
+          </div>
+          <div>
+            <div className="brand-name">Goldstadt</div>
+            <div className="brand-tag">Admin Panel</div>
+          </div>
         </div>
-        <nav className="sidebar-nav">
-          <button 
-            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('dashboard')}
-          >
-            📊 <span className="nav-text">Дашборд</span>
-          </button>
-          
-          <button 
-            className={`nav-item ${activeTab === 'add-news' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('add-news')}
-          >
-            ✍️ <span className="nav-text">Додати новину</span>
-          </button>
 
-          {/* Новий розділ сповіщень */}
-          <button 
-            className={`nav-item ${activeTab === 'notifications' ? 'active' : ''}`} 
-            onClick={() => setActiveTab('notifications')}
-          >
-            🔔 <span className="nav-text">Сповіщення</span>
-          </button>
+        <nav className="sidebar-nav">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(item.id)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-text">{item.label}</span>
+            </button>
+          ))}
         </nav>
-        
-        <button onClick={handleLogout} className="glass-btn logout-btn">
-          🚪 <span className="nav-text">Вийти</span>
+
+        <div className="sidebar-spacer" />
+
+        <button onClick={handleLogout} className="logout-btn">
+          <span className="nav-icon">🚪</span>
+          <span className="nav-text">Вийти</span>
         </button>
       </aside>
 
-      {/* Основна частина */}
+      {/* ---- MAIN ---- */}
       <div className="main-area">
-        {/* Верхня панель (Header) */}
+        {/* Topbar */}
         <header className="glass-panel topbar">
-          <h2 className="topbar-title">{getHeaderTitle()}</h2>
+          <div className="topbar-left">
+            <div>
+              <div className="topbar-title">{header.title}</div>
+              <div className="topbar-subtitle">{header.sub}</div>
+            </div>
+          </div>
           <div className="admin-profile">
             <div className="avatar-glass">А</div>
             <span className="profile-name">Адміністратор</span>
           </div>
         </header>
 
-        {/* Динамічний контент (Рендеримо відповідний компонент) */}
+        {/* Content */}
         <main className="content">
-          {activeTab === 'dashboard' && <Dashboard API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
-          {activeTab === 'add-news' && <AddNews API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
+          {activeTab === 'dashboard'     && <Dashboard     API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
+          {activeTab === 'news-list'     && <NewsList      API_BASE_URL={API_BASE_URL} />}
+          {activeTab === 'add-news'      && <AddNews       API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
           {activeTab === 'notifications' && <Notifications API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
         </main>
       </div>

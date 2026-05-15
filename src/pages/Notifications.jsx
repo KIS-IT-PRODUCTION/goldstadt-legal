@@ -10,23 +10,24 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
     e.preventDefault();
     setIsLoading(true);
     setStatus({ type: '', message: '' });
-    const token = localStorage.getItem('token'); 
-    
+    const token = localStorage.getItem('token');
+
     if (!token) return onLogout();
 
     try {
       const response = await fetch(`${API_BASE_URL}/notifications`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ title, message }),
       });
 
       if (response.ok) {
         setStatus({ type: 'success', message: 'Сповіщення успішно надіслано всім користувачам!' });
-        setTitle(''); setMessage('');
+        setTitle('');
+        setMessage('');
       } else {
         if (response.status === 401) onLogout();
         setStatus({ type: 'error', message: 'Помилка при відправці сповіщення.' });
@@ -39,26 +40,79 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
   };
 
   return (
-    <div className="glass-panel form-card">
-      <h3 style={{marginTop: 0, marginBottom: '20px'}}>Відправити сповіщення</h3>
-      <p style={{color: 'rgba(255,255,255,0.7)', marginBottom: '30px'}}>
-        Цей інструмент відправить push-сповіщення всім зареєстрованим користувачам додатку (у кого увімкнені дозволи).
-      </p>
+    <div className="glass-panel form-card animated-fade-in">
+      <div className="section-header">
+        <div className="section-header-inner">
+          <div>
+            <div className="section-h">Push-сповіщення</div>
+            <div className="section-sub">Відправити повідомлення всім користувачам</div>
+          </div>
+        </div>
+      </div>
 
-      {status.message && <div className={`alert ${status.type}`}>{status.message}</div>}
-      
-      <form onSubmit={handleSendNotification} className="news-form">
-        <div className="input-group">
-          <label>Заголовок сповіщення *</label>
-          <input type="text" value={title} onChange={(e)=>setTitle(e.target.value)} required className="glass-input" placeholder="Наприклад: Важливе оновлення!" />
+      <div className="notif-info-box">
+        <span className="notif-info-icon">📡</span>
+        <span>
+          Повідомлення буде доставлено всім зареєстрованим користувачам, у яких увімкнені дозволи на сповіщення.
+          Використовуйте цей інструмент відповідально — часті сповіщення знижують engagement.
+        </span>
+      </div>
+
+      {status.message && (
+        <div style={{ padding: '0 28px 4px' }}>
+          <div className={`alert ${status.type}`} style={{ margin: 0 }}>
+            {status.message}
+          </div>
         </div>
-        <div className="input-group">
-          <label>Текст повідомлення *</label>
-          <textarea value={message} onChange={(e)=>setMessage(e.target.value)} required className="glass-input textarea" style={{minHeight: '120px'}} placeholder="Введіть текст, який побачать користувачі..." />
+      )}
+
+      <form onSubmit={handleSendNotification}>
+        <div className="form-body" style={{ paddingTop: '16px' }}>
+
+          <div className="form-section-title">Повідомлення</div>
+
+          <div className="form-group">
+            <label>Заголовок *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="glass-input"
+              placeholder="Наприклад: Важливе оновлення!"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Текст повідомлення *</label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required
+              className="glass-input tall"
+              style={{ minHeight: '130px' }}
+              placeholder="Введіть текст, який побачать користувачі..."
+            />
+          </div>
+
+          <div style={{ marginTop: '8px' }}>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="glass-btn primary submit-btn"
+            >
+              {isLoading ? (
+                <>
+                  <div className="btn-spinner" />
+                  Відправка...
+                </>
+              ) : (
+                '🚀 Відправити зараз'
+              )}
+            </button>
+          </div>
+
         </div>
-        <button type="submit" disabled={isLoading} className="glass-btn primary submit-btn">
-          {isLoading ? 'Відправка...' : '🚀 Відправити зараз'}
-        </button>
       </form>
     </div>
   );
