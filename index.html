@@ -2,9 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-<link rel="icon" type="image/png" href="/goldstadt-legal/favicon.png" />
+    <link rel="icon" type="image/png" href="/goldstadt-legal/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>goldstadtaktuell-site</title>
+    <title>Goldstadtaktuell</title>
+    <script>
+    (function() {
+      // 1. Отримуємо параметри з посилання (наприклад: ?page=news&id=6a08718...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const page = urlParams.get('page');
+      const id = urlParams.get('id');
+
+      // 2. Якщо це посилання на новину, намагаємося перенаправити в додаток
+      if (page === 'news' && id) {
+        // Формуємо кастомну схему, яку додаток точно зрозуміє
+        const appSchemeLink = `goldstadtaktuell://news/${id}`;
+        
+        // Спроба відкрити додаток
+        window.location.href = appSchemeLink;
+
+        // Опціонально: якщо додаток не встановлено, через 2 секунди можна показати кнопку "Завантажити додаток"
+        setTimeout(function() {
+          console.log("Якщо додаток не відкрився, користувач залишається на сайті.");
+        }, 2000);
+      }
+    })();
+  </script>
     <script type="module" crossorigin src="/goldstadt-legal/assets/index-CX7WBPPg.js"></script>
     <link rel="stylesheet" crossorigin href="/goldstadt-legal/assets/index-nqMpL4T3.css">
   </head>
