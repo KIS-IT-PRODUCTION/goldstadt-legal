@@ -5,32 +5,59 @@
     <link rel="icon" type="image/png" href="/goldstadt-legal/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Goldstadtaktuell</title>
-    <script>
-    (function() {
-      // 1. Отримуємо параметри з посилання (наприклад: ?page=news&id=6a08718...)
-      const urlParams = new URLSearchParams(window.location.search);
-      const page = urlParams.get('page');
-      const id = urlParams.get('id');
-
-      // 2. Якщо це посилання на новину, намагаємося перенаправити в додаток
-      if (page === 'news' && id) {
-        // Формуємо кастомну схему, яку додаток точно зрозуміє
-        const appSchemeLink = `goldstadtaktuell://news/${id}`;
-        
-        // Спроба відкрити додаток
-        window.location.href = appSchemeLink;
-
-        // Опціонально: якщо додаток не встановлено, через 2 секунди можна показати кнопку "Завантажити додаток"
-        setTimeout(function() {
-          console.log("Якщо додаток не відкрився, користувач залишається на сайті.");
-        }, 2000);
-      }
-    })();
-  </script>
     <script type="module" crossorigin src="/goldstadt-legal/assets/index-CX7WBPPg.js"></script>
     <link rel="stylesheet" crossorigin href="/goldstadt-legal/assets/index-nqMpL4T3.css">
   </head>
-  <body>
+  <body style="margin: 0; padding: 0;">
+    
+    <div id="app-redirect-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #121212; z-index: 99999; justify-content: center; align-items: center; flex-direction: column; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
+      <span style="font-size: 60px; margin-bottom: 20px;">📰</span>
+      <h2 style="margin-bottom: 10px; text-align: center; color: #fff; font-size: 24px;">Goldstadt Aktuell</h2>
+      <p style="margin-bottom: 40px; text-align: center; color: #aaa; font-size: 16px; max-width: 280px; line-height: 1.4;">Möchten Sie diesen Artikel in der App lesen?</p>
+      
+      <button id="open-app-btn" style="background-color: #B8860B; color: white; border: none; padding: 15px 40px; font-size: 16px; font-weight: bold; border-radius: 25px; cursor: pointer; width: 85%; max-width: 300px; box-shadow: 0 4px 15px rgba(184,134,11,0.4); transition: transform 0.1s;">
+        In der App öffnen
+      </button>
+      
+      <button id="stay-on-web-btn" style="background: transparent; color: #777; border: none; margin-top: 25px; font-size: 14px; cursor: pointer; text-decoration: underline;">
+        Weiter auf der Website
+      </button>
+    </div>
+
     <div id="root"></div>
+    
+
+    <script>
+      (function() {
+        // 1. Отримуємо параметри з посилання (?page=news&id=...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page');
+        const id = urlParams.get('id');
+
+        // 2. Якщо це посилання на новину — показуємо банер
+        if (page === 'news' && id) {
+          const banner = document.getElementById('app-redirect-banner');
+          if (banner) {
+            banner.style.display = 'flex';
+          }
+
+          // Автоматична спроба відкрити (спрацює не всюди, тому кнопка обов'язкова)
+          const appSchemeLink = `goldstadtaktuell://news/${id}`;
+          window.location.href = appSchemeLink;
+
+          // 3. Обробка кліку по кнопці "In der App öffnen" (Користувацький жест — залізно пройде блокування)
+          document.getElementById('open-app-btn').addEventListener('click', function() {
+            window.location.href = appSchemeLink;
+          });
+
+          // 4. Обробка кліку "Залишитися на сайті" (ховаємо банер, показуємо веб-сайт)
+          document.getElementById('stay-on-web-btn').addEventListener('click', function() {
+            if (banner) {
+              banner.style.display = 'none';
+            }
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
