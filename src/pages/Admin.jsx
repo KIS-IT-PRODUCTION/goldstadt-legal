@@ -5,18 +5,24 @@ import Dashboard from './Dashboard';
 import AddNews from './AddNews';
 import Notifications from './Notifications';
 import NewsList from './NewsList';
+import SupportAdmin from './SupportAdmin';
+import CommentsList from './CommentsList';
 
 const NAV_ITEMS = [
   { id: 'dashboard',     icon: '📊', label: 'Дашборд' },
   { id: 'news-list',     icon: '📰', label: 'Всі новини' },
   { id: 'add-news',      icon: '✍️',  label: 'Додати новину' },
   { id: 'notifications', icon: '🔔', label: 'Сповіщення' },
+  { id: 'support',       icon: '❓', label: 'Підтримка' },
+  { id: 'comments',      icon: '💬', label: 'Коментарі' },
 ];
 
 const HEADER_TITLES = {
   dashboard:     { title: 'Дашборд',             sub: 'Загальна статистика' },
   'news-list':   { title: 'Управління новинами',  sub: 'Редагуйте та видаляйте матеріали' },
+  'support':     { title: 'Підтримка',           sub: 'Отримайте допомогу від адміністратора' },
   'add-news':    { title: 'Нова публікація',      sub: 'Заповніть форму та опублікуйте матеріал' },
+  'comments':    { title: 'Коментарі',           sub: 'Модеруйте коментарі' },
   notifications: { title: 'Push-сповіщення',     sub: 'Відправте повідомлення всім користувачам' },
 };
 
@@ -24,8 +30,8 @@ export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const API_BASE_URL = 'https://goldstadtaktuell-backend-production.up.railway.app/api'; 
-
+  // const API_BASE_URL = 'https://goldstadtaktuell-backend-production.up.railway.app/api'; 
+  const API_BASE_URL = "http://49.13.148.71:3000/api";
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
@@ -108,6 +114,8 @@ export default function Admin() {
           {activeTab === 'news-list'     && <NewsList      API_BASE_URL={API_BASE_URL} />}
           {activeTab === 'add-news'      && <AddNews       API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
           {activeTab === 'notifications' && <Notifications API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
+          {activeTab === 'support'       && <SupportAdmin  API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
+          {activeTab === 'comments'      && <CommentsList  API_BASE_URL={API_BASE_URL} />}
         </main>
       </div>
     </div>

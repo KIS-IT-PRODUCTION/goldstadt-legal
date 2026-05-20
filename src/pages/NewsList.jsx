@@ -6,18 +6,33 @@ export default function NewsList({ API_BASE_URL }) {
   const [selectedNews, setSelectedNews] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [previewImages, setPreviewImages] = useState([]); // Масив для підтримки кількох фото
 
   useEffect(() => {
     fetchNews();
   }, []);
 
+  const getImageUrl = (path) => {
+    if (!path) return 'https://placehold.co/100x100?text=No+Image';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    
+    let cleanPath = path.replace(/\\/g, '/');
+    if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
+    
+    let base = API_BASE_URL;
+    if (base.endsWith('/')) base = base.slice(0, -1);
+    if (base.endsWith('/api')) base = base.slice(0, -4);
+    
+    return `${base}/${cleanPath}`;
+  };
+
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/news`);
+      const response = await fetch(`${API_BASE_URL}/news?page=1&limit=200`);
       const data = await response.json();
-      setNews(Array.isArray(data) ? data : []);
+      const newsArray = Array.isArray(data) ? data : (data.data && Array.isArray(data.data) ? data.data : []);
+      setNews(newsArray);
     } catch (error) {
       console.error('Помилка завантаження:', error);
     } finally {
@@ -29,10 +44,16 @@ export default function NewsList({ API_BASE_URL }) {
     setSelectedNews({
       _id: item._id,
       title: item.title || '',
-      description: item.content || '',
-      isPremium: item.isPremium || false,
+      content: item.content || '',
+      isPremium: item.isPremium === true || String(item.isPremium).toLowerCase() === 'true',
+      existingImages: item.images || []
     });
-    setPreviewImage(item.images && item.images[0] ? item.images[0] : '');
+    
+    if (item.images && item.images.length > 0) {
+      setPreviewImages(item.images.map(img => getImageUrl(img)));
+    } else {
+      setPreviewImages([]);
+    }
     setIsModalOpen(true);
   };
 
@@ -46,6 +67,8 @@ export default function NewsList({ API_BASE_URL }) {
       });
       if (response.ok) {
         setNews(news.filter((item) => item._id !== id));
+      } else {
+        alert('Не вдалося видалити новину');
       }
     } catch (error) {
       console.error('Помилка видалення:', error);
@@ -53,12 +76,19 @@ export default function NewsList({ API_BASE_URL }) {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setPreviewImage(reader.result);
-      reader.readAsDataURL(file);
-      setSelectedNews((prev) => ({ ...prev, newImage: file }));
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Очищаємо попередні створені локальні Blob-посилання, щоб не забивати пам'ять
+      previewImages.forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+
+      const localUrls = files.map(file => URL.createObjectURL(file));
+      setPreviewImages(localUrls);
+      
+      setSelectedNews((prev) => ({ ...prev, newImages: files }));
     }
   };
 
@@ -68,14 +98,26 @@ export default function NewsList({ API_BASE_URL }) {
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
+      
       formData.append('title', selectedNews.title);
-      formData.append('description', selectedNews.description);
-      formData.append('isPro', selectedNews.isPremium);
-      if (selectedNews.newImage) formData.append('image', selectedNews.newImage);
+      formData.append('content', selectedNews.content); 
+      formData.append('isPremium', String(selectedNews.isPremium)); 
+
+      // Якщо обрано нові зображення, додаємо їх
+      if (selectedNews.newImages && selectedNews.newImages.length > 0) {
+        selectedNews.newImages.forEach((file) => {
+          formData.append('images', file); // Ключ збігається з налаштуваннями Multer (upload.array('images'))
+        });
+      }
+
+      // Перевіряємо заголовки: у разі надсилання FormData ні в якому разі не пишіть 'Content-Type'
+      const headers = {
+        'Authorization': `Bearer ${token}`
+      };
 
       const response = await fetch(`${API_BASE_URL}/news/${selectedNews._id}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` },
+        method: 'PUT', // Якщо бекенд не прийме PUT з FormData, змініть тут локально на 'POST' для перевірки
+        headers: headers,
         body: formData,
       });
 
@@ -83,20 +125,28 @@ export default function NewsList({ API_BASE_URL }) {
         await fetchNews();
         closeModal();
       } else {
-        const errorData = await response.json();
-        alert(`Помилка: ${errorData.message}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Бекенд повернув помилку:', errorData);
+        alert(`Помилка оновлення: ${errorData.message || response.statusText || response.status}`);
       }
-    } catch {
-      alert('Помилка оновлення');
+    } catch (err) {
+      console.error('Критична помилка запиту оновлення:', err);
+      alert('Помилка з\'єднання з сервером при оновленні');
     } finally {
       setIsUpdating(false);
     }
   };
 
   const closeModal = () => {
+    // Чистимо Blob посилання
+    previewImages.forEach(url => {
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
     setIsModalOpen(false);
     setSelectedNews(null);
-    setPreviewImage(null);
+    setPreviewImages([]);
   };
 
   return (
@@ -145,15 +195,18 @@ export default function NewsList({ API_BASE_URL }) {
                 </td>
                 <td>
                   <img
-                    src={item.images && item.images[0] ? item.images[0] : ''}
+                    src={item.images && item.images.length > 0 ? getImageUrl(item.images[0]) : ''}
                     className="table-img-preview"
                     alt="preview"
-                    onError={(e) => { e.target.style.background = 'rgba(255,255,255,0.05)'; e.target.src = ''; }}
+                    onError={(e) => { 
+                      e.target.style.background = 'rgba(255,255,255,0.05)'; 
+                      e.target.src = 'https://placehold.co/50x50?text=No+Photo'; 
+                    }}
                   />
                 </td>
                 <td className="title-cell">{item.title}</td>
                 <td style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>
-                  {new Date(item.createdAt).toLocaleDateString('uk-UA')}
+                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString('uk-UA') : '---'}
                 </td>
                 <td className="actions-cell">
                   <button className="icon-btn edit" title="Редагувати" onClick={() => handleEditClick(item)}>✏️</button>
@@ -175,19 +228,31 @@ export default function NewsList({ API_BASE_URL }) {
             </div>
 
             <div className="modal-body custom-scrollbar">
-              {/* Image section */}
-              <div className="edit-image-section">
-                {previewImage && (
-                  <img src={previewImage} alt="Preview" className="large-preview" />
+              <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                Медіафайли матеріалу ({previewImages.length})
+              </label>
+              
+              <div className="edit-image-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {previewImages.length > 0 && (
+                  <div className="images-preview-grid" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    {previewImages.map((src, idx) => (
+                      <img 
+                        key={idx} 
+                        src={src} 
+                        alt={`Preview ${idx}`} 
+                        className="large-preview" 
+                        style={{ width: '110px', height: '110px', objectFit: 'cover', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }} 
+                      />
+                    ))}
+                  </div>
                 )}
-                <label className="file-upload-label">
-                  <span>📷 Змінити фото</span>
-                  <input type="file" onChange={handleFileChange} hidden />
+                <label className="file-upload-label" style={{ alignSelf: 'flex-start' }}>
+                  <span>📷 Завантажити нові фото (замінити поточні)</span>
+                  <input type="file" onChange={handleFileChange} multiple accept="image/*" hidden />
                 </label>
               </div>
 
-              {/* Grid fields */}
-              <div className="form-grid" style={{ marginBottom: '16px' }}>
+              <div className="form-grid" style={{ marginBottom: '16px', marginTop: '16px' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Заголовок</label>
                   <input
@@ -222,9 +287,10 @@ export default function NewsList({ API_BASE_URL }) {
                 <label>Опис / Зміст</label>
                 <textarea
                   className="glass-input tall"
-                  value={selectedNews.description}
-                  onChange={(e) => setSelectedNews({ ...selectedNews, description: e.target.value })}
+                  value={selectedNews.content}
+                  onChange={(e) => setSelectedNews({ ...selectedNews, content: e.target.value })}
                   placeholder="Текст новини..."
+                  style={{ minHeight: '160px' }}
                 />
               </div>
             </div>
