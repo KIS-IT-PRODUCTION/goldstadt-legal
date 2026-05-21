@@ -30,9 +30,8 @@ export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // const API_BASE_URL = 'https://goldstadtaktuell-backend-production.up.railway.app/api'; 
-  const API_BASE_URL = "http://49.13.148.71:3000/api";
-  // const API_BASE_URL = 'https://busy-coins-remain.loca.lt/api';
+  const API_BASE_URL = "https://api.goldstadtaktuell.de/api";
+  
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
