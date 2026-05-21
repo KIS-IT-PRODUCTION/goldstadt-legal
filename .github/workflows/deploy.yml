@@ -1,0 +1,36 @@
+name: Deploy Admin Panel to Hetzner
+
+on:
+  push:
+    branches:
+      - main  # Запускати деплой при пуші в гілку main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-size: 20
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build project
+      run: npm run build  # Vite згенерує папку dist
+
+    - name: Deploy to Hetzner Server via SSH
+      uses: easingthemes/ssh-deploy@main
+      with:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        ARGS: "-rlgoDzvc --delete"
+        SOURCE: "dist/"  # Що завантажуємо (папка збірки Vite)
+        REMOTE_HOST: ${{ secrets.SERVER_IP }}
+        REMOTE_USER: ${{ secrets.SERVER_USER }}
+        TARGET: "/var/www/goldstadt-admin"  # Куди завантажуємо на сервері
