@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 export default function AddNews({ API_BASE_URL, onLogout }) {
   const [title, setTitle] = useState('');
@@ -8,17 +8,33 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
 
-  // Реф для нашого кастомного редактора тексту
   const editorRef = useRef(null);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      if (!editorRef.current.innerHTML.trim() || editorRef.current.innerHTML === '<br>') {
+        editorRef.current.innerHTML = '<p><br></p>';
+      }
+    }
+    
+    if (typeof document !== 'undefined') {
+      try {
+        document.execCommand('defaultParagraphSeparator', false, 'p');
+      } catch (e) {
+        console.warn('defaultParagraphSeparator error:', e);
+      }
+    }
+  }, []);
 
   const handleFileChange = (e) => {
     setImages(e.target.files);
   };
 
-  // Функції форматування тексту
   const applyStyle = (command, value = null) => {
     document.execCommand(command, false, value);
-    editorRef.current.focus(); // повертаємо фокус на текст
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
   };
 
   const addLink = () => {
@@ -36,10 +52,18 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
     if (!token) return onLogout();
 
-    // Забираємо відформатований HTML-текст із нашого редактора
-    const htmlContent = editorRef.current ? editorRef.current.innerHTML : '';
+    let htmlContent = editorRef.current ? editorRef.current.innerHTML : '';
 
-    if (!htmlContent.trim() || htmlContent === '<br>') {
+    // Перетворюємо випадкові <div> від браузера у нормальні <p>
+    htmlContent = htmlContent
+      .replace(/<div>/gi, '<p>')
+      .replace(/<\/div>/gi, '</p>')
+      // Видаляємо дубльовані порожні параграфи
+      .replace(/<p><br><\/p><p><br><\/p>/gi, '<p><br></p>');
+
+    const cleanText = htmlContent.replace(/<[^>]*>/g, '').trim();
+    
+    if (!cleanText && !htmlContent.includes('<img') && !htmlContent.includes('<iframe')) {
       setStatus({ type: 'error', message: 'Текст новини не може бути порожнім' });
       setIsLoading(false);
       return;
@@ -47,7 +71,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
     const formData = new FormData();
     formData.append('title', title);
-    formData.append('content', htmlContent); // Відправляємо HTML-рядок на бекенд
+    formData.append('content', htmlContent);
     formData.append('isPremium', isPremium);
     formData.append('notificationsEnabled', sendPush);
     for (let i = 0; i < images.length; i++) formData.append('images', images[i]);
@@ -62,11 +86,14 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       if (response.ok) {
         setStatus({ type: 'success', message: 'Новину успішно опубліковано!' });
         setTitle('');
-        if (editorRef.current) editorRef.current.innerHTML = ''; // Очищуємо редактор
+        if (editorRef.current) {
+          editorRef.current.innerHTML = '<p><br></p>';
+        }
         setIsPremium(false);
         setSendPush(true);
         setImages([]);
-        document.getElementById('image-upload').value = '';
+        const fileInput = document.getElementById('image-upload');
+        if (fileInput) fileInput.value = '';
       } else {
         if (response.status === 401) onLogout();
         setStatus({ type: 'error', message: 'Помилка при додаванні новини' });
@@ -80,6 +107,17 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
   return (
     <div className="glass-panel form-card animated-fade-in">
+      <style>{`
+        .custom-editor p {
+          margin-top: 0 !important;
+          margin-bottom: 14px !important;
+          line-height: 1.5;
+        }
+        .custom-editor p:last-child {
+          margin-bottom: 0 !important;
+        }
+      `}</style>
+
       <div className="section-header">
         <div className="section-header-inner">
           <div>
@@ -100,7 +138,6 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       <form onSubmit={handleSubmitNews}>
         <div className="form-body">
 
-          {/* ---- CONTENT ---- */}
           <div className="form-section-title">Контент</div>
 
           <div className="form-group">
@@ -115,11 +152,9 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
             />
           </div>
 
-          {/* ---- РЕДАКТОР ТЕКСТУ З ТУЛБАРОМ ---- */}
           <div className="form-group">
             <label>Текст новини *</label>
             
-            {/* Панель інструментів */}
             <div style={toolbarStyle}>
               <button type="button" onClick={() => applyStyle('bold')} style={toolBtnStyle} title="Жирний">
                 <strong>B</strong>
@@ -138,17 +173,15 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
               </button>
             </div>
 
-            {/* Поле введення тексту (Заміна звичайного textarea) */}
             <div
               ref={editorRef}
               contentEditable
-              className="glass-input tall"
+              className="glass-input tall custom-editor"
               style={editorStyle}
-              placeholder="Напишіть текст статті тут..."
+              placeholder="Напишите текст статьи тут..."
             />
           </div>
 
-          {/* ---- MEDIA ---- */}
           <div className="form-section-title">Медіа</div>
 
           <div className="form-group">
@@ -173,14 +206,10 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
             </label>
           </div>
 
-          {/* ---- SETTINGS ---- */}
           <div className="form-section-title">Налаштування</div>
 
           <div className="toggle-row">
-            <div
-              className="toggle-item"
-              onClick={() => setIsPremium(!isPremium)}
-            >
+            <div className="toggle-item" onClick={() => setIsPremium(!isPremium)}>
               <div className="toggle-item-left">
                 <div className="toggle-item-icon gold">⭐</div>
                 <div className="toggle-item-info">
@@ -193,15 +222,12 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
               </div>
             </div>
 
-            <div
-              className="toggle-item"
-              onClick={() => setSendPush(!sendPush)}
-            >
+            <div className="toggle-item" onClick={() => setSendPush(!sendPush)}>
               <div className="toggle-item-left">
                 <div className="toggle-item-icon indigo">🔔</div>
                 <div className="toggle-item-info">
                   <div className="toggle-item-title">Push-сповіщення</div>
-                  <div className="toggle-item-sub">Сповістити всіх користувачів</div>
+                  <div className="toggle-item-sub">Сповістити всіх користувавців</div>
                 </div>
               </div>
               <div className={`toggle-switch ${sendPush ? 'on' : ''}`}>
@@ -210,13 +236,8 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
             </div>
           </div>
 
-          {/* ---- SUBMIT ---- */}
           <div style={{ marginTop: '28px' }}>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="glass-btn primary submit-btn"
-            >
+            <button type="submit" disabled={isLoading} className="glass-btn primary submit-btn">
               {isLoading ? (
                 <>
                   <div className="btn-spinner" />
@@ -234,7 +255,6 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
   );
 }
 
-// --- Стилі для тулбару та редактора ---
 const toolbarStyle = {
   display: 'flex',
   gap: '6px',
@@ -242,7 +262,8 @@ const toolbarStyle = {
   padding: '8px',
   borderRadius: '8px 8px 0 0',
   border: '1px solid rgba(255, 255, 255, 0.1)',
-  borderBottom: 'none'
+  borderBottom: 'none',
+  flexWrap: 'wrap'
 };
 
 const toolBtnStyle = {
@@ -266,6 +287,5 @@ const editorStyle = {
   padding: '14px',
   outline: 'none',
   borderTop: 'none',
-  whiteSpace: 'pre-wrap',
   textAlign: 'left'
 };
