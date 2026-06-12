@@ -24,10 +24,10 @@ export default function Login({ onLoginSuccess, API_BASE_URL }) {
         localStorage.setItem('role', data.user.role);
         onLoginSuccess();
       } else {
-        setStatus({ type: 'error', message: 'Невірні дані або відсутні права адміна.' });
+        setStatus({ type: 'error', message: 'Неверные данные или отсутствуют права админа.' });
       }
     } catch {
-      setStatus({ type: 'error', message: 'Помилка з\'єднання з сервером.' });
+      setStatus({ type: 'error', message: 'Ошибка соединения с сервером.' });
     } finally {
       setAuthLoading(false);
     }
@@ -38,7 +38,7 @@ export default function Login({ onLoginSuccess, API_BASE_URL }) {
       <div style={styles.loginCard}>
         <div style={styles.loginHeader}>
           <h2 style={styles.title}>Admin Portal</h2>
-          <p style={styles.subtitle}>Увійдіть для доступу до панелі управління</p>
+          <p style={styles.subtitle}>Войдите для доступа к панели управления</p>
         </div>
 
         {status.message && (
@@ -89,9 +89,9 @@ export default function Login({ onLoginSuccess, API_BASE_URL }) {
           >
             {authLoading ? (
               <span style={styles.loadingFlex}>
-                <span style={styles.spinner}></span> Перевірка...
+                <span style={styles.spinner}></span> Проверка...
               </span>
-            ) : 'Увійти'}
+            ) : 'Войти'}
           </button>
         </form>
       </div>
@@ -99,7 +99,6 @@ export default function Login({ onLoginSuccess, API_BASE_URL }) {
   );
 }
 
-// 🎨 Елегантні та сучасні стилі для форми
 const styles = {
   pageContainer: {
     display: 'flex',
@@ -197,7 +196,6 @@ const styles = {
     justifyContent: 'center',
     gap: '10px'
   },
-  // Базовий css-анімаційний хак для лоадера прямо в інлайні
   spinner: {
     width: '16px',
     height: '16px',

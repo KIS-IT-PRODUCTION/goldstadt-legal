@@ -10,20 +10,20 @@ import CommentsList from './CommentsList';
 
 const NAV_ITEMS = [
   { id: 'dashboard',     icon: '📊', label: 'Дашборд' },
-  { id: 'news-list',     icon: '📰', label: 'Всі новини' },
-  { id: 'add-news',      icon: '✍️',  label: 'Додати новину' },
-  { id: 'notifications', icon: '🔔', label: 'Сповіщення' },
-  { id: 'support',       icon: '❓', label: 'Підтримка' },
-  { id: 'comments',      icon: '💬', label: 'Коментарі' },
+  { id: 'news-list',     icon: '📰', label: 'Все новости' },
+  { id: 'add-news',      icon: '✍️',  label: 'Добавить новость' },
+  { id: 'notifications', icon: '🔔', label: 'Уведомления' },
+  { id: 'support',       icon: '❓', label: 'Поддержка' },
+  { id: 'comments',      icon: '💬', label: 'Комментарии' },
 ];
 
 const HEADER_TITLES = {
-  dashboard:     { title: 'Дашборд',             sub: 'Загальна статистика' },
-  'news-list':   { title: 'Управління новинами',  sub: 'Редагуйте та видаляйте матеріали' },
-  'support':     { title: 'Підтримка',           sub: 'Отримайте допомогу від адміністратора' },
-  'add-news':    { title: 'Нова публікація',      sub: 'Заповніть форму та опублікуйте матеріал' },
-  'comments':    { title: 'Коментарі',           sub: 'Модеруйте коментарі' },
-  notifications: { title: 'Push-сповіщення',     sub: 'Відправте повідомлення всім користувачам' },
+  dashboard:     { title: 'Дашборд',             sub: 'Общая статистика' },
+  'news-list':   { title: 'Управление новостями',  sub: 'Редактируйте и удаляйте материалы' },
+  'support':     { title: 'Поддержка',           sub: 'Получите помощь от администратора' },
+  'add-news':    { title: 'Новая публикация',      sub: 'Заполните форму и опубликуйте материал' },
+  'comments':    { title: 'Комментарии',           sub: 'Модерируйте комментарии' },
+  notifications: { title: 'Push-уведомления',     sub: 'Отправьте сообщение всем пользователям' },
 };
 
 export default function Admin() {
@@ -53,13 +53,12 @@ export default function Admin() {
     );
   }
 
-  const header = HEADER_TITLES[activeTab] || { title: 'Панель управління', sub: '' };
+  const header = HEADER_TITLES[activeTab] || { title: 'Панель управления', sub: '' };
 
   return (
     <div className="admin-wrapper glass-bg layout-dashboard">
       <AdminStyles />
 
-      {/* ---- SIDEBAR ---- */}
       <aside className="glass-panel sidebar">
         <div className="sidebar-brand">
           <div className="brand-icon">
@@ -88,13 +87,11 @@ export default function Admin() {
 
         <button onClick={handleLogout} className="logout-btn">
           <span className="nav-icon">🚪</span>
-          <span className="nav-text">Вийти</span>
+          <span className="nav-text">Выйти</span>
         </button>
       </aside>
 
-      {/* ---- MAIN ---- */}
       <div className="main-area">
-        {/* Topbar */}
         <header className="glass-panel topbar">
           <div className="topbar-left">
             <div>
@@ -104,11 +101,10 @@ export default function Admin() {
           </div>
           <div className="admin-profile">
             <div className="avatar-glass">А</div>
-            <span className="profile-name">Адміністратор</span>
+            <span className="profile-name">Администратор</span>
           </div>
         </header>
 
-        {/* Content */}
         <main className="content">
           {activeTab === 'dashboard'     && <Dashboard     API_BASE_URL={API_BASE_URL} onLogout={handleLogout} />}
           {activeTab === 'news-list'     && <NewsList      API_BASE_URL={API_BASE_URL} />}

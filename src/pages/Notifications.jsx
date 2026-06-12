@@ -25,15 +25,15 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Сповіщення успішно надіслано всім користувачам!' });
+        setStatus({ type: 'success', message: 'Уведомление успешно отправлено всем пользователям!' });
         setTitle('');
         setMessage('');
       } else {
         if (response.status === 401) onLogout();
-        setStatus({ type: 'error', message: 'Помилка при відправці сповіщення.' });
+        setStatus({ type: 'error', message: 'Ошибка при отправке уведомления.' });
       }
     } catch {
-      setStatus({ type: 'error', message: 'Помилка з\'єднання з сервером.' });
+      setStatus({ type: 'error', message: 'Ошибка соединения с сервером.' });
     } finally {
       setIsLoading(false);
     }
@@ -44,8 +44,8 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
       <div className="section-header">
         <div className="section-header-inner">
           <div>
-            <div className="section-h">Push-сповіщення</div>
-            <div className="section-sub">Відправити повідомлення всім користувачам</div>
+            <div className="section-h">Push-уведомления</div>
+            <div className="section-sub">Отправить сообщение всем пользователям</div>
           </div>
         </div>
       </div>
@@ -53,8 +53,8 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
       <div className="notif-info-box">
         <span className="notif-info-icon">📡</span>
         <span>
-          Повідомлення буде доставлено всім зареєстрованим користувачам, у яких увімкнені дозволи на сповіщення.
-          Використовуйте цей інструмент відповідально — часті сповіщення знижують engagement.
+          Сообщение будет доставлено всем зарегистрированным пользователям, у которых включены разрешения на уведомления.
+          Используйте этот инструмент ответственно — частые уведомления снижают engagement.
         </span>
       </div>
 
@@ -69,7 +69,7 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
       <form onSubmit={handleSendNotification}>
         <div className="form-body" style={{ paddingTop: '16px' }}>
 
-          <div className="form-section-title">Повідомлення</div>
+          <div className="form-section-title">Сообщение</div>
 
           <div className="form-group">
             <label>Заголовок *</label>
@@ -79,19 +79,19 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
               onChange={(e) => setTitle(e.target.value)}
               required
               className="glass-input"
-              placeholder="Наприклад: Важливе оновлення!"
+              placeholder="Например: Важное обновление!"
             />
           </div>
 
           <div className="form-group">
-            <label>Текст повідомлення *</label>
+            <label>Текст сообщения *</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               required
               className="glass-input tall"
               style={{ minHeight: '130px' }}
-              placeholder="Введіть текст, який побачать користувачі..."
+              placeholder="Введите текст, который увидят пользователи..."
             />
           </div>
 
@@ -104,10 +104,10 @@ export default function Notifications({ API_BASE_URL, onLogout }) {
               {isLoading ? (
                 <>
                   <div className="btn-spinner" />
-                  Відправка...
+                  Отправка...
                 </>
               ) : (
-                '🚀 Відправити зараз'
+                '🚀 Отправить сейчас'
               )}
             </button>
           </div>

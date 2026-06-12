@@ -38,7 +38,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
   };
 
   const addLink = () => {
-    const url = window.prompt('Введіть посилання (URL):', 'https://');
+    const url = window.prompt('Введите ссылку (URL):', 'https://');
     if (url) {
       applyStyle('createLink', url);
     }
@@ -54,17 +54,15 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
     let htmlContent = editorRef.current ? editorRef.current.innerHTML : '';
 
-    // Перетворюємо випадкові <div> від браузера у нормальні <p>
     htmlContent = htmlContent
       .replace(/<div>/gi, '<p>')
       .replace(/<\/div>/gi, '</p>')
-      // Видаляємо дубльовані порожні параграфи
       .replace(/<p><br><\/p><p><br><\/p>/gi, '<p><br></p>');
 
     const cleanText = htmlContent.replace(/<[^>]*>/g, '').trim();
     
     if (!cleanText && !htmlContent.includes('<img') && !htmlContent.includes('<iframe')) {
-      setStatus({ type: 'error', message: 'Текст новини не може бути порожнім' });
+      setStatus({ type: 'error', message: 'Текст новости не может быть пустым' });
       setIsLoading(false);
       return;
     }
@@ -84,7 +82,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Новину успішно опубліковано!' });
+        setStatus({ type: 'success', message: 'Новость успешно опубликована!' });
         setTitle('');
         if (editorRef.current) {
           editorRef.current.innerHTML = '<p><br></p>';
@@ -96,10 +94,10 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
         if (fileInput) fileInput.value = '';
       } else {
         if (response.status === 401) onLogout();
-        setStatus({ type: 'error', message: 'Помилка при додаванні новини' });
+        setStatus({ type: 'error', message: 'Ошибка при добавлении новости' });
       }
     } catch {
-      setStatus({ type: 'error', message: 'Помилка з\'єднання з сервером' });
+      setStatus({ type: 'error', message: 'Ошибка соединения с сервером' });
     } finally {
       setIsLoading(false);
     }
@@ -121,8 +119,8 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       <div className="section-header">
         <div className="section-header-inner">
           <div>
-            <div className="section-h">Новий матеріал</div>
-            <div className="section-sub">Заповніть форму та опублікуйте статтю</div>
+            <div className="section-h">Новый материал</div>
+            <div className="section-sub">Заполните форму и опубликуйте статью</div>
           </div>
         </div>
       </div>
@@ -148,27 +146,27 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
               onChange={(e) => setTitle(e.target.value)}
               required
               className="glass-input"
-              placeholder="Введіть заголовок новини..."
+              placeholder="Введите заголовок новости..."
             />
           </div>
 
           <div className="form-group">
-            <label>Текст новини *</label>
+            <label>Текст новости *</label>
             
             <div style={toolbarStyle}>
-              <button type="button" onClick={() => applyStyle('bold')} style={toolBtnStyle} title="Жирний">
+              <button type="button" onClick={() => applyStyle('bold')} style={toolBtnStyle} title="Жирный">
                 <strong>B</strong>
               </button>
               <button type="button" onClick={() => applyStyle('italic')} style={toolBtnStyle} title="Курсив">
                 <em>I</em>
               </button>
-              <button type="button" onClick={() => applyStyle('underline')} style={toolBtnStyle} title="Підкреслений">
+              <button type="button" onClick={() => applyStyle('underline')} style={toolBtnStyle} title="Подчеркнутый">
                 <u>U</u>
               </button>
-              <button type="button" onClick={addLink} style={toolBtnStyle} title="Додати посилання">
-                🔗 Посилання
+              <button type="button" onClick={addLink} style={toolBtnStyle} title="Добавить ссылку">
+                🔗 Ссылка
               </button>
-              <button type="button" onClick={() => applyStyle('unlink')} style={toolBtnStyle} title="Прибрати посилання">
+              <button type="button" onClick={() => applyStyle('unlink')} style={toolBtnStyle} title="Убрать ссылку">
                 ❌
               </button>
             </div>
@@ -182,10 +180,10 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
             />
           </div>
 
-          <div className="form-section-title">Медіа</div>
+          <div className="form-section-title">Медиа</div>
 
           <div className="form-group">
-            <label>Зображення (до 30 шт.)</label>
+            <label>Изображения (до 30 шт.)</label>
             <label className="file-upload-zone">
               <input
                 id="image-upload"
@@ -196,25 +194,25 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
               />
               <div className="file-upload-icon">🖼️</div>
               <div className="file-upload-label-text">
-                Перетягніть файли або <strong>оберіть вручну</strong>
+                Перетащите файлы или <strong>выберите вручную</strong>
               </div>
               {images.length > 0 && (
                 <div className="file-count-badge">
-                  ✓ Обрано файлів: {images.length}
+                  ✓ Выбрано файлов: {images.length}
                 </div>
               )}
             </label>
           </div>
 
-          <div className="form-section-title">Налаштування</div>
+          <div className="form-section-title">Настройки</div>
 
           <div className="toggle-row">
             <div className="toggle-item" onClick={() => setIsPremium(!isPremium)}>
               <div className="toggle-item-left">
                 <div className="toggle-item-icon gold">⭐</div>
                 <div className="toggle-item-info">
-                  <div className="toggle-item-title">Преміум контент</div>
-                  <div className="toggle-item-sub">Тільки для підписників PRO</div>
+                  <div className="toggle-item-title">Премиум контент</div>
+                  <div className="toggle-item-sub">Только для подписчиков PRO</div>
                 </div>
               </div>
               <div className={`toggle-switch ${isPremium ? 'on' : ''}`}>
@@ -226,8 +224,8 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
               <div className="toggle-item-left">
                 <div className="toggle-item-icon indigo">🔔</div>
                 <div className="toggle-item-info">
-                  <div className="toggle-item-title">Push-сповіщення</div>
-                  <div className="toggle-item-sub">Сповістити всіх користувавців</div>
+                  <div className="toggle-item-title">Push-уведомление</div>
+                  <div className="toggle-item-sub">Оповестить всех пользователей</div>
                 </div>
               </div>
               <div className={`toggle-switch ${sendPush ? 'on' : ''}`}>
@@ -241,10 +239,10 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
               {isLoading ? (
                 <>
                   <div className="btn-spinner" />
-                  Публікація...
+                  Публикация...
                 </>
               ) : (
-                '🚀 Опублікувати новину'
+                '🚀 Опубликовать новость'
               )}
             </button>
           </div>

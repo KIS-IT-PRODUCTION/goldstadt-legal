@@ -6,7 +6,7 @@ export default function NewsList({ API_BASE_URL }) {
   const [selectedNews, setSelectedNews] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [previewImages, setPreviewImages] = useState([]); // Масив для підтримки кількох фото
+  const [previewImages, setPreviewImages] = useState([]);
 
   useEffect(() => {
     fetchNews();
@@ -34,7 +34,7 @@ export default function NewsList({ API_BASE_URL }) {
       const newsArray = Array.isArray(data) ? data : (data.data && Array.isArray(data.data) ? data.data : []);
       setNews(newsArray);
     } catch (error) {
-      console.error('Помилка завантаження:', error);
+      console.error('Ошибка загрузки:', error);
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export default function NewsList({ API_BASE_URL }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Ви впевнені, що хочете видалити цю новину?')) return;
+    if (!window.confirm('Вы уверены, что хотите удалить эту новость?')) return;
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/news/${id}`, {
@@ -68,17 +68,16 @@ export default function NewsList({ API_BASE_URL }) {
       if (response.ok) {
         setNews(news.filter((item) => item._id !== id));
       } else {
-        alert('Не вдалося видалити новину');
+        alert('Не удалось удалить новость');
       }
     } catch (error) {
-      console.error('Помилка видалення:', error);
+      console.error('Ошибка удаления:', error);
     }
   };
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      // Очищаємо попередні створені локальні Blob-посилання, щоб не забивати пам'ять
       previewImages.forEach(url => {
         if (url.startsWith('blob:')) {
           URL.revokeObjectURL(url);
@@ -103,20 +102,18 @@ export default function NewsList({ API_BASE_URL }) {
       formData.append('content', selectedNews.content); 
       formData.append('isPremium', String(selectedNews.isPremium)); 
 
-      // Якщо обрано нові зображення, додаємо їх
       if (selectedNews.newImages && selectedNews.newImages.length > 0) {
         selectedNews.newImages.forEach((file) => {
-          formData.append('images', file); // Ключ збігається з налаштуваннями Multer (upload.array('images'))
+          formData.append('images', file);
         });
       }
 
-      // Перевіряємо заголовки: у разі надсилання FormData ні в якому разі не пишіть 'Content-Type'
       const headers = {
         'Authorization': `Bearer ${token}`
       };
 
       const response = await fetch(`${API_BASE_URL}/news/${selectedNews._id}`, {
-        method: 'PUT', // Якщо бекенд не прийме PUT з FormData, змініть тут локально на 'POST' для перевірки
+        method: 'PUT',
         headers: headers,
         body: formData,
       });
@@ -126,19 +123,18 @@ export default function NewsList({ API_BASE_URL }) {
         closeModal();
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Бекенд повернув помилку:', errorData);
-        alert(`Помилка оновлення: ${errorData.message || response.statusText || response.status}`);
+        console.error('Бэкенд вернул ошибку:', errorData);
+        alert(`Ошибка обновления: ${errorData.message || response.statusText || response.status}`);
       }
     } catch (err) {
-      console.error('Критична помилка запиту оновлення:', err);
-      alert('Помилка з\'єднання з сервером при оновленні');
+      console.error('Критическая ошибка запроса обновления:', err);
+      alert('Ошибка соединения с сервером при обновлении');
     } finally {
       setIsUpdating(false);
     }
   };
 
   const closeModal = () => {
-    // Чистимо Blob посилання
     previewImages.forEach(url => {
       if (url.startsWith('blob:')) {
         URL.revokeObjectURL(url);
@@ -155,12 +151,12 @@ export default function NewsList({ API_BASE_URL }) {
         <div className="section-header-inner">
           <div>
             <div className="section-h">
-              Новини
+              Новости
               {!loading && (
-                <span className="table-count">{news.length} матеріалів</span>
+                <span className="table-count">{news.length} материалов</span>
               )}
             </div>
-            <div className="section-sub">Керуйте опублікованими матеріалами</div>
+            <div className="section-sub">Управляйте опубликованными материалами</div>
           </div>
         </div>
       </div>
@@ -172,17 +168,17 @@ export default function NewsList({ API_BASE_URL }) {
       ) : news.length === 0 ? (
         <div className="page-loading">
           <span style={{ fontSize: '32px' }}>📭</span>
-          <span>Новин ще немає</span>
+          <span>Новостей еще нет</span>
         </div>
       ) : (
         <table className="admin-table">
           <thead>
             <tr>
               <th>Статус</th>
-              <th>Прев'ю</th>
+              <th>Превью</th>
               <th>Заголовок</th>
               <th>Дата</th>
-              <th style={{ textAlign: 'right' }}>Дії</th>
+              <th style={{ textAlign: 'right' }}>Действия</th>
             </tr>
           </thead>
           <tbody>
@@ -206,11 +202,11 @@ export default function NewsList({ API_BASE_URL }) {
                 </td>
                 <td className="title-cell">{item.title}</td>
                 <td style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px' }}>
-                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString('uk-UA') : '---'}
+                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString('ru-RU') : '---'}
                 </td>
                 <td className="actions-cell">
-                  <button className="icon-btn edit" title="Редагувати" onClick={() => handleEditClick(item)}>✏️</button>
-                  <button className="icon-btn delete" title="Видалити" onClick={() => handleDelete(item._id)}>🗑️</button>
+                  <button className="icon-btn edit" title="Редактировать" onClick={() => handleEditClick(item)}>✏️</button>
+                  <button className="icon-btn delete" title="Удалить" onClick={() => handleDelete(item._id)}>🗑️</button>
                 </td>
               </tr>
             ))}
@@ -218,18 +214,17 @@ export default function NewsList({ API_BASE_URL }) {
         </table>
       )}
 
-      {/* MODAL */}
       {isModalOpen && selectedNews && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
           <div className="modal-content expanded glass-panel">
             <div className="modal-header">
-              <h3>Редагування матеріалу</h3>
+              <h3>Редактирование материала</h3>
               <button className="close-x" onClick={closeModal}>&times;</button>
             </div>
 
             <div className="modal-body custom-scrollbar">
               <label style={{ display: 'block', marginBottom: '8px', color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                Медіафайли матеріалу ({previewImages.length})
+                Медиафайлы материала ({previewImages.length})
               </label>
               
               <div className="edit-image-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -247,7 +242,7 @@ export default function NewsList({ API_BASE_URL }) {
                   </div>
                 )}
                 <label className="file-upload-label" style={{ alignSelf: 'flex-start' }}>
-                  <span>📷 Завантажити нові фото (замінити поточні)</span>
+                  <span>📷 Загрузить новые фото (заменить текущие)</span>
                   <input type="file" onChange={handleFileChange} multiple accept="image/*" hidden />
                 </label>
               </div>
@@ -259,12 +254,12 @@ export default function NewsList({ API_BASE_URL }) {
                     className="glass-input"
                     value={selectedNews.title}
                     onChange={(e) => setSelectedNews({ ...selectedNews, title: e.target.value })}
-                    placeholder="Заголовок новини"
+                    placeholder="Заголовок новости"
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label>Статус доступу</label>
+                  <label>Статус доступа</label>
                   <div
                     className="toggle-item"
                     style={{ padding: '11px 14px' }}
@@ -273,7 +268,7 @@ export default function NewsList({ API_BASE_URL }) {
                     <div className="toggle-item-left">
                       <div className="toggle-item-icon gold" style={{ width: 30, height: 30, borderRadius: 8, fontSize: 13 }}>⭐</div>
                       <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-                        {selectedNews.isPremium ? 'Тільки PRO' : 'Для всіх'}
+                        {selectedNews.isPremium ? 'Только PRO' : 'Для всех'}
                       </span>
                     </div>
                     <div className={`toggle-switch ${selectedNews.isPremium ? 'on' : ''}`}>
@@ -284,19 +279,19 @@ export default function NewsList({ API_BASE_URL }) {
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Опис / Зміст</label>
+                <label>Описание / Содержание</label>
                 <textarea
                   className="glass-input tall"
                   value={selectedNews.content}
                   onChange={(e) => setSelectedNews({ ...selectedNews, content: e.target.value })}
-                  placeholder="Текст новини..."
+                  placeholder="Текст новости..."
                   style={{ minHeight: '160px' }}
                 />
               </div>
             </div>
 
             <div className="modal-footer">
-              <button className="glass-btn cancel" onClick={closeModal}>Скасувати</button>
+              <button className="glass-btn cancel" onClick={closeModal}>Отмена</button>
               <button
                 className="glass-btn save"
                 onClick={handleUpdate}
@@ -305,10 +300,10 @@ export default function NewsList({ API_BASE_URL }) {
                 {isUpdating ? (
                   <>
                     <div className="btn-spinner" style={{ borderColor: 'rgba(0,0,0,0.2)', borderTopColor: '#06070f' }} />
-                    Збереження...
+                    Сохранение...
                   </>
                 ) : (
-                  '✓ Зберегти'
+                  '✓ Сохранить'
                 )}
               </button>
             </div>
