@@ -16,15 +16,131 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
         editorRef.current.innerHTML = '<p><br></p>';
       }
     }
-    
-    if (typeof document !== 'undefined') {
-      try {
-        document.execCommand('defaultParagraphSeparator', false, 'p');
-      } catch (e) {
-        console.warn('defaultParagraphSeparator error:', e);
-      }
+
+    try {
+      document.execCommand('defaultParagraphSeparator', false, 'p');
+    } catch (e) {
+      console.warn('defaultParagraphSeparator error:', e);
     }
   }, []);
+
+  /**
+   * Sanitize pasted HTML: strip all styles/classes/colors but keep
+   * bold, italic, underline, links, and paragraph/line-break structure.
+   */
+  const sanitizePastedHtml = (html) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const walk = (node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        // Remove all inline styles (kills white background, font colors, etc.)
+        node.removeAttribute('style');
+        node.removeAttribute('class');
+        node.removeAttribute('id');
+        node.removeAttribute('bgcolor');
+        node.removeAttribute('color');
+        node.removeAttribute('face');
+        node.removeAttribute('size');
+        node.removeAttribute('width');
+        node.removeAttribute('height');
+        node.removeAttribute('align');
+        node.removeAttribute('valign');
+        node.removeAttribute('data-start');
+        node.removeAttribute('data-end');
+
+        const tag = node.tagName.toLowerCase();
+
+        // Replace non-semantic wrappers with their children inline
+        const unwrapTags = ['span', 'font', 'div'];
+        if (unwrapTags.includes(tag) && !['b', 'i', 'u', 'a', 'strong', 'em'].includes(tag)) {
+          // We'll handle div -> p conversion below; for span/font just unwrap later
+        }
+      }
+      Array.from(node.childNodes).forEach(walk);
+    };
+
+    walk(doc.body);
+
+    // Convert common block elements to <p>
+    doc.body.querySelectorAll('div, section, article, header, footer, li').forEach((el) => {
+      const p = doc.createElement('p');
+      p.innerHTML = el.innerHTML;
+      el.replaceWith(p);
+    });
+
+    // Word-specific: remove empty <o:p> leftovers and MSO comments
+    doc.body.querySelectorAll('o\\:p, [class^="Mso"]').forEach((el) => el.remove());
+
+    // Unwrap span and font (now safe to do after block conversion)
+    doc.body.querySelectorAll('span, font').forEach((el) => {
+      const frag = doc.createDocumentFragment();
+      Array.from(el.childNodes).forEach((c) => frag.appendChild(c));
+      el.replaceWith(frag);
+    });
+
+    // Strip any remaining disallowed tags but keep their text
+    const allowedTags = new Set(['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'a', 'ul', 'ol', 'li']);
+    doc.body.querySelectorAll('*').forEach((el) => {
+      if (!allowedTags.has(el.tagName.toLowerCase())) {
+        const frag = doc.createDocumentFragment();
+        Array.from(el.childNodes).forEach((c) => frag.appendChild(c));
+        el.replaceWith(frag);
+      }
+    });
+
+    // Keep only href on <a> tags
+    doc.body.querySelectorAll('a').forEach((a) => {
+      const href = a.getAttribute('href');
+      Array.from(a.attributes).forEach((attr) => a.removeAttribute(attr.name));
+      if (href) a.setAttribute('href', href);
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    // Collapse multiple consecutive empty <p> into one
+    let result = doc.body.innerHTML;
+    result = result.replace(/(<p[^>]*>\s*(<br\s*\/?>\s*)?<\/p>\s*){2,}/gi, '<p><br></p>');
+
+    // Remove leading/trailing empty paragraphs
+    result = result.replace(/^(\s*<p[^>]*>\s*(<br\s*\/?>\s*)?<\/p>\s*)+/gi, '');
+    result = result.replace(/(\s*<p[^>]*>\s*(<br\s*\/?>\s*)?<\/p>\s*)+$/gi, '');
+
+    return result || '<p><br></p>';
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+
+    const clipboardData = e.clipboardData || window.clipboardData;
+    let html = clipboardData.getData('text/html');
+    const plainText = clipboardData.getData('text/plain');
+
+    let sanitized;
+    if (html) {
+      sanitized = sanitizePastedHtml(html);
+    } else {
+      // Plain text: convert newlines to paragraphs
+      sanitized = plainText
+        .split(/\n\n+/)
+        .map((block) => `<p>${block.replace(/\n/g, '<br>')}</p>`)
+        .join('') || '<p><br></p>';
+    }
+
+    // Insert at cursor position
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+
+    const frag = range.createContextualFragment(sanitized);
+    range.insertNode(frag);
+
+    // Move cursor to end of inserted content
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
 
   const handleFileChange = (e) => {
     setImages(e.target.files);
@@ -60,7 +176,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       .replace(/<p><br><\/p><p><br><\/p>/gi, '<p><br></p>');
 
     const cleanText = htmlContent.replace(/<[^>]*>/g, '').trim();
-    
+
     if (!cleanText && !htmlContent.includes('<img') && !htmlContent.includes('<iframe')) {
       setStatus({ type: 'error', message: 'Текст новости не может быть пустым' });
       setIsLoading(false);
@@ -77,7 +193,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
     try {
       const response = await fetch(`${API_BASE_URL}/news`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -114,6 +230,20 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
         .custom-editor p:last-child {
           margin-bottom: 0 !important;
         }
+        /* Ensure pasted content never brings its own background or color */
+        .custom-editor * {
+          background-color: transparent !important;
+          color: inherit !important;
+          font-family: inherit !important;
+          font-size: inherit !important;
+        }
+        /* But keep bold/italic/underline visible */
+        .custom-editor b,
+        .custom-editor strong { font-weight: bold !important; }
+        .custom-editor i,
+        .custom-editor em   { font-style: italic !important; }
+        .custom-editor u    { text-decoration: underline !important; }
+        .custom-editor a    { color: #7eb3ff !important; text-decoration: underline; }
       `}</style>
 
       <div className="section-header">
@@ -152,7 +282,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
           <div className="form-group">
             <label>Текст новости *</label>
-            
+
             <div style={toolbarStyle}>
               <button type="button" onClick={() => applyStyle('bold')} style={toolBtnStyle} title="Жирный">
                 <strong>B</strong>
@@ -177,6 +307,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
               className="glass-input tall custom-editor"
               style={editorStyle}
               placeholder="Напишите текст статьи тут..."
+              onPaste={handlePaste}
             />
           </div>
 
@@ -261,7 +392,7 @@ const toolbarStyle = {
   borderRadius: '8px 8px 0 0',
   border: '1px solid rgba(255, 255, 255, 0.1)',
   borderBottom: 'none',
-  flexWrap: 'wrap'
+  flexWrap: 'wrap',
 };
 
 const toolBtnStyle = {
@@ -285,5 +416,5 @@ const editorStyle = {
   padding: '14px',
   outline: 'none',
   borderTop: 'none',
-  textAlign: 'left'
+  textAlign: 'left',
 };
