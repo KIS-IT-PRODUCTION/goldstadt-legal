@@ -4,13 +4,37 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
   const [title, setTitle] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [sendPush, setSendPush] = useState(true);
+  const [isScheduled, setIsScheduled] = useState(false); 
+  const [scheduledAt, setScheduledAt] = useState('');   
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
+  
+  // Состояние для хранения списка уже запланированных новостей
+  const [scheduledList, setScheduledList] = useState([]);
 
   const editorRef = useRef(null);
 
+  // Функция загрузки списка запланированных новостей
+  const fetchScheduledNews = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/news/admin/scheduled`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setScheduledList(data);
+      }
+    } catch (err) {
+      console.error('Не удалось загрузить список запланированных новостей', err);
+    }
+  };
+
   useEffect(() => {
+    fetchScheduledNews();
+
     if (editorRef.current) {
       if (!editorRef.current.innerHTML.trim() || editorRef.current.innerHTML === '<br>') {
         editorRef.current.innerHTML = '<p><br></p>';
@@ -25,8 +49,7 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
   }, []);
 
   /**
-   * Sanitize pasted HTML: strip all styles/classes/colors but keep
-   * bold, italic, underline, links, and paragraph/line-break structure.
+   * Очистка вставленного HTML-текста
    */
   const sanitizePastedHtml = (html) => {
     const parser = new DOMParser();
@@ -34,7 +57,6 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
     const walk = (node) => {
       if (node.nodeType === Node.ELEMENT_NODE) {
-        // Remove all inline styles (kills white background, font colors, etc.)
         node.removeAttribute('style');
         node.removeAttribute('class');
         node.removeAttribute('id');
@@ -50,11 +72,9 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
         node.removeAttribute('data-end');
 
         const tag = node.tagName.toLowerCase();
-
-        // Replace non-semantic wrappers with their children inline
         const unwrapTags = ['span', 'font', 'div'];
         if (unwrapTags.includes(tag) && !['b', 'i', 'u', 'a', 'strong', 'em'].includes(tag)) {
-          // We'll handle div -> p conversion below; for span/font just unwrap later
+          // Будет обработано позже
         }
       }
       Array.from(node.childNodes).forEach(walk);
@@ -62,24 +82,20 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
     walk(doc.body);
 
-    // Convert common block elements to <p>
     doc.body.querySelectorAll('div, section, article, header, footer, li').forEach((el) => {
       const p = doc.createElement('p');
       p.innerHTML = el.innerHTML;
       el.replaceWith(p);
     });
 
-    // Word-specific: remove empty <o:p> leftovers and MSO comments
     doc.body.querySelectorAll('o\\:p, [class^="Mso"]').forEach((el) => el.remove());
 
-    // Unwrap span and font (now safe to do after block conversion)
     doc.body.querySelectorAll('span, font').forEach((el) => {
       const frag = doc.createDocumentFragment();
       Array.from(el.childNodes).forEach((c) => frag.appendChild(c));
       el.replaceWith(frag);
     });
 
-    // Strip any remaining disallowed tags but keep their text
     const allowedTags = new Set(['p', 'br', 'b', 'strong', 'i', 'em', 'u', 'a', 'ul', 'ol', 'li']);
     doc.body.querySelectorAll('*').forEach((el) => {
       if (!allowedTags.has(el.tagName.toLowerCase())) {
@@ -89,7 +105,6 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       }
     });
 
-    // Keep only href on <a> tags
     doc.body.querySelectorAll('a').forEach((a) => {
       const href = a.getAttribute('href');
       Array.from(a.attributes).forEach((attr) => a.removeAttribute(attr.name));
@@ -98,11 +113,8 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       a.setAttribute('rel', 'noopener noreferrer');
     });
 
-    // Collapse multiple consecutive empty <p> into one
     let result = doc.body.innerHTML;
     result = result.replace(/(<p[^>]*>\s*(<br\s*\/?>\s*)?<\/p>\s*){2,}/gi, '<p><br></p>');
-
-    // Remove leading/trailing empty paragraphs
     result = result.replace(/^(\s*<p[^>]*>\s*(<br\s*\/?>\s*)?<\/p>\s*)+/gi, '');
     result = result.replace(/(\s*<p[^>]*>\s*(<br\s*\/?>\s*)?<\/p>\s*)+$/gi, '');
 
@@ -111,7 +123,6 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
   const handlePaste = (e) => {
     e.preventDefault();
-
     const clipboardData = e.clipboardData || window.clipboardData;
     let html = clipboardData.getData('text/html');
     const plainText = clipboardData.getData('text/plain');
@@ -120,14 +131,12 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
     if (html) {
       sanitized = sanitizePastedHtml(html);
     } else {
-      // Plain text: convert newlines to paragraphs
       sanitized = plainText
         .split(/\n\n+/)
         .map((block) => `<p>${block.replace(/\n/g, '<br>')}</p>`)
         .join('') || '<p><br></p>';
     }
 
-    // Insert at cursor position
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
     const range = selection.getRangeAt(0);
@@ -135,8 +144,6 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
     const frag = range.createContextualFragment(sanitized);
     range.insertNode(frag);
-
-    // Move cursor to end of inserted content
     range.collapse(false);
     selection.removeAllRanges();
     selection.addRange(range);
@@ -168,8 +175,13 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
 
     if (!token) return onLogout();
 
-    let htmlContent = editorRef.current ? editorRef.current.innerHTML : '';
+    if (isScheduled && !scheduledAt) {
+      setStatus({ type: 'error', message: 'Пожалуйста, выберите дату и время публикации' });
+      setIsLoading(false);
+      return;
+    }
 
+    let htmlContent = editorRef.current ? editorRef.current.innerHTML : '';
     htmlContent = htmlContent
       .replace(/<div>/gi, '<p>')
       .replace(/<\/div>/gi, '</p>')
@@ -188,7 +200,16 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
     formData.append('content', htmlContent);
     formData.append('isPremium', isPremium);
     formData.append('notificationsEnabled', sendPush);
-    for (let i = 0; i < images.length; i++) formData.append('images', images[i]);
+    
+    // Переводим локальное время инпута в ISO формат с таймзоной вашего ПК
+    if (isScheduled && scheduledAt) {
+      const isoDate = new Date(scheduledAt).toISOString();
+      formData.append('scheduledAt', isoDate);
+    }
+
+    for (let i = 0; i < images.length; i++) {
+      formData.append('images', images[i]);
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/news`, {
@@ -198,16 +219,21 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
       });
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Новость успешно опубликована!' });
+        setStatus({ type: 'success', message: isScheduled ? 'Новость успешно запланирована!' : 'Новость успешно опубликована!' });
         setTitle('');
         if (editorRef.current) {
           editorRef.current.innerHTML = '<p><br></p>';
         }
         setIsPremium(false);
         setSendPush(true);
+        setIsScheduled(false);
+        setScheduledAt('');
         setImages([]);
         const fileInput = document.getElementById('image-upload');
         if (fileInput) fileInput.value = '';
+        
+        // Сразу обновляем список запланированных постов ниже
+        fetchScheduledNews();
       } else {
         if (response.status === 401) onLogout();
         setStatus({ type: 'error', message: 'Ошибка при добавлении новости' });
@@ -219,167 +245,271 @@ export default function AddNews({ API_BASE_URL, onLogout }) {
     }
   };
 
+  // Красивое форматирование даты для вывода в списке
+  const formatScheduledDate = (dateString) => {
+    const d = new Date(dateString);
+    return d.toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
-    <div className="glass-panel form-card animated-fade-in">
-      <style>{`
-        .custom-editor p {
-          margin-top: 0 !important;
-          margin-bottom: 14px !important;
-          line-height: 1.5;
-        }
-        .custom-editor p:last-child {
-          margin-bottom: 0 !important;
-        }
-        /* Ensure pasted content never brings its own background or color */
-        .custom-editor * {
-          background-color: transparent !important;
-          color: inherit !important;
-          font-family: inherit !important;
-          font-size: inherit !important;
-        }
-        /* But keep bold/italic/underline visible */
-        .custom-editor b,
-        .custom-editor strong { font-weight: bold !important; }
-        .custom-editor i,
-        .custom-editor em   { font-style: italic !important; }
-        .custom-editor u    { text-decoration: underline !important; }
-        .custom-editor a    { color: #7eb3ff !important; text-decoration: underline; }
-      `}</style>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      
+      {/* ОСНОВНАЯ ФОРМА ДОБАВЛЕНИЯ */}
+      <div className="glass-panel form-card animated-fade-in">
+        <style>{`
+          .custom-editor p {
+            margin-top: 0 !important;
+            margin-bottom: 14px !important;
+            line-height: 1.5;
+          }
+          .custom-editor p:last-child {
+            margin-bottom: 0 !important;
+          }
+          .custom-editor * {
+            background-color: transparent !important;
+            color: inherit !important;
+            font-family: inherit !important;
+            font-size: inherit !important;
+          }
+          .custom-editor b, .custom-editor strong { font-weight: bold !important; }
+          .custom-editor i, .custom-editor em   { font-style: italic !important; }
+          .custom-editor u    { text-decoration: underline !important; }
+          .custom-editor a    { color: #7eb3ff !important; text-decoration: underline; }
+          
+          .datetime-wrapper {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.3s ease;
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
 
-      <div className="section-header">
-        <div className="section-header-inner">
-          <div>
-            <div className="section-h">Новый материал</div>
-            <div className="section-sub">Заполните форму и опубликуйте статью</div>
+          .scheduled-container {
+            padding: 24px;
+          }
+          .scheduled-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 10px;
+          }
+          .scheduled-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+          .scheduled-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #fff;
+          }
+          .scheduled-time {
+            font-size: 12px;
+            color: #eab308;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+          .scheduled-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: rgba(234, 179, 8, 0.15);
+            color: #eab308;
+            border: 1px solid rgba(234, 179, 8, 0.3);
+          }
+          .scheduled-badge.premium {
+            background: rgba(212, 175, 55, 0.15);
+            color: #d4af37;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+          }
+          .scheduled-empty {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            padding: 20px 0;
+          }
+        `}</style>
+
+        <div className="section-header">
+          <div className="section-header-inner">
+            <div>
+              <div className="section-h">Новый материал</div>
+              <div className="section-sub">Заполните форму и опубликуйте статью</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {status.message && (
-        <div style={{ padding: '20px 28px 0' }}>
-          <div className={`alert ${status.type}`} style={{ margin: 0 }}>
-            {status.message}
+        {status.message && (
+          <div style={{ padding: '20px 28px 0' }}>
+            <div className={`alert ${status.type}`} style={{ margin: 0 }}>
+              {status.message}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <form onSubmit={handleSubmitNews}>
-        <div className="form-body">
+        <form onSubmit={handleSubmitNews}>
+          <div className="form-body">
 
-          <div className="form-section-title">Контент</div>
+            <div className="form-section-title">Контент</div>
 
-          <div className="form-group">
-            <label>Заголовок *</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              className="glass-input"
-              placeholder="Введите заголовок новости..."
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Текст новости *</label>
-
-            <div style={toolbarStyle}>
-              <button type="button" onClick={() => applyStyle('bold')} style={toolBtnStyle} title="Жирный">
-                <strong>B</strong>
-              </button>
-              <button type="button" onClick={() => applyStyle('italic')} style={toolBtnStyle} title="Курсив">
-                <em>I</em>
-              </button>
-              <button type="button" onClick={() => applyStyle('underline')} style={toolBtnStyle} title="Подчеркнутый">
-                <u>U</u>
-              </button>
-              <button type="button" onClick={addLink} style={toolBtnStyle} title="Добавить ссылку">
-                🔗 Ссылка
-              </button>
-              <button type="button" onClick={() => applyStyle('unlink')} style={toolBtnStyle} title="Убрать ссылку">
-                ❌
-              </button>
+            <div className="form-group">
+              <label>Заголовок *</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className="glass-input"
+                placeholder="Введите заголовок новости..."
+              />
             </div>
 
-            <div
-              ref={editorRef}
-              contentEditable
-              className="glass-input tall custom-editor"
-              style={editorStyle}
-              placeholder="Напишите текст статьи тут..."
-              onPaste={handlePaste}
-            />
-          </div>
+            <div className="form-group">
+              <label>Текст новости *</label>
+
+              <div style={toolbarStyle}>
+                <button type="button" onClick={() => applyStyle('bold')} style={toolBtnStyle} title="Жирный">
+                  <strong>B</strong>
+                </button>
+                <button type="button" onClick={() => applyStyle('italic')} style={toolBtnStyle} title="Курсив">
+                  <em>I</em>
+                </button>
+                <button type="button" onClick={() => applyStyle('underline')} style={toolBtnStyle} title="Подчеркнутый">
+                  <u>U</u>
+                </button>
+                <button type="button" onClick={addLink} style={toolBtnStyle} title="Добавить ссылку">
+                  🔗 Ссылка
+                </button>
+                <button type="button" onClick={() => applyStyle('unlink')} style={toolBtnStyle} title="Убрать ссылку">
+                  ❌
+                </button>
+              </div>
+
+              <div
+                ref={editorRef}
+                contentEditable
+                className="glass-input tall custom-editor"
+                style={editorStyle}
+                placeholder="Напишите текст статьи тут..."
+                onPaste={handlePaste}
+              />
+            </div>
 
           <div className="form-section-title">Медиа</div>
 
-          <div className="form-group">
-            <label>Изображения (до 30 шт.)</label>
-            <label className="file-upload-zone">
-              <input
-                id="image-upload"
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              <div className="file-upload-icon">🖼️</div>
-              <div className="file-upload-label-text">
-                Перетащите файлы или <strong>выберите вручную</strong>
-              </div>
-              {images.length > 0 && (
-                <div className="file-count-badge">
-                  ✓ Выбрано файлов: {images.length}
+            <div className="form-group">
+              <label>Изображения (до 30 шт.)</label>
+              <label className="file-upload-zone">
+                <input
+                  id="image-upload"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                <div className="file-upload-icon">🖼️</div>
+                <div className="file-upload-label-text">
+                  Перетащите файлы или <strong>выберите вручную</strong>
                 </div>
-              )}
-            </label>
-          </div>
+                {images.length > 0 && (
+                  <div className="file-count-badge">
+                    ✓ Выбрано файлов: {images.length}
+                  </div>
+                )}
+              </label>
+            </div>
 
-          <div className="form-section-title">Настройки</div>
+            <div className="form-section-title">Настройки</div>
 
-          <div className="toggle-row">
-            <div className="toggle-item" onClick={() => setIsPremium(!isPremium)}>
-              <div className="toggle-item-left">
-                <div className="toggle-item-icon gold">⭐</div>
-                <div className="toggle-item-info">
-                  <div className="toggle-item-title">Премиум контент</div>
-                  <div className="toggle-item-sub">Только для подписчиков PRO</div>
+            <div className="toggle-row">
+              <div className="toggle-item" onClick={() => setIsPremium(!isPremium)}>
+                <div className="toggle-item-left">
+                  <div className="toggle-item-icon gold">⭐</div>
+                  <div className="toggle-item-info">
+                    <div className="toggle-item-title">Премиум контент</div>
+                    <div className="toggle-item-sub">Только для подписчиков PRO</div>
+                  </div>
+                </div>
+                <div className={`toggle-switch ${isPremium ? 'on' : ''}`}>
+                  <div className="toggle-handle" />
                 </div>
               </div>
-              <div className={`toggle-switch ${isPremium ? 'on' : ''}`}>
-                <div className="toggle-handle" />
+
+              <div className="toggle-item" onClick={() => setSendPush(!sendPush)}>
+                <div className="toggle-item-left">
+                  <div className="toggle-item-icon indigo">🔔</div>
+                  <div className="toggle-item-info">
+                    <div className="toggle-item-title">Push-уведомление</div>
+                    <div className="toggle-item-sub">Оповестить всех пользователей</div>
+                  </div>
+                </div>
+                <div className={`toggle-switch ${sendPush ? 'on' : ''}`}>
+                  <div className="toggle-handle" />
+                </div>
+              </div>
+
+              <div className="toggle-item" onClick={() => setIsScheduled(!isScheduled)}>
+                <div className="toggle-item-left">
+                  <div className="toggle-item-icon" style={{ backgroundColor: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>📅</div>
+                  <div className="toggle-item-info">
+                    <div className="toggle-item-title">Отложенная публикация</div>
+                    <div className="toggle-item-sub">Опубликовать по расписанию</div>
+                  </div>
+                </div>
+                <div className={`toggle-switch ${isScheduled ? 'on' : ''}`}>
+                  <div className="toggle-handle" />
+                </div>
               </div>
             </div>
 
-            <div className="toggle-item" onClick={() => setSendPush(!sendPush)}>
-              <div className="toggle-item-left">
-                <div className="toggle-item-icon indigo">🔔</div>
-                <div className="toggle-item-info">
-                  <div className="toggle-item-title">Push-уведомление</div>
-                  <div className="toggle-item-sub">Оповестить всех пользователей</div>
+            {isScheduled && (
+              <div className="datetime-wrapper">
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ marginBottom: '8px', display: 'block' }}>Дата и время публикации *</label>
+                  <input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    required={isScheduled}
+                    className="glass-input"
+                    style={{ colorScheme: 'dark' }} 
+                  />
                 </div>
               </div>
-              <div className={`toggle-switch ${sendPush ? 'on' : ''}`}>
-                <div className="toggle-handle" />
-              </div>
+            )}
+
+            <div style={{ marginTop: '28px' }}>
+              <button type="submit" disabled={isLoading} className="glass-btn primary submit-btn">
+                {isLoading ? (
+                  <>
+                    <div className="btn-spinner" />
+                    Сохранение...
+                  </>
+                ) : (
+                  isScheduled ? '📅 Запланировать публикацию' : '🚀 Опубликовать новость'
+                )}
+              </button>
             </div>
-          </div>
 
-          <div style={{ marginTop: '28px' }}>
-            <button type="submit" disabled={isLoading} className="glass-btn primary submit-btn">
-              {isLoading ? (
-                <>
-                  <div className="btn-spinner" />
-                  Публикация...
-                </>
-              ) : (
-                '🚀 Опубликовать новость'
-              )}
-            </button>
           </div>
+        </form>
+      </div>
 
-        </div>
-      </form>
     </div>
   );
 }

@@ -31,6 +31,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const API_BASE_URL = "https://api.goldstadtaktuell.de/api";
+  // const API_BASE_URL = "http://localhost:3000/api";
   
   useEffect(() => {
     const token = localStorage.getItem('token');
